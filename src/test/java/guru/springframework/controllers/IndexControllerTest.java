@@ -2,6 +2,8 @@ package guru.springframework.controllers;
 
 import guru.springframework.domain.Recipe;
 import guru.springframework.services.RecipeService;
+import reactor.core.publisher.Flux;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -12,6 +14,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.ui.Model;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -61,9 +64,9 @@ public class IndexControllerTest {
 
         recipes.add(recipe);
 
-        when(recipeService.getRecipes()).thenReturn(recipes);
+        when(recipeService.getRecipes()).thenReturn(Flux.fromIterable(recipes));
 
-        ArgumentCaptor<Set<Recipe>> argumentCaptor = ArgumentCaptor.forClass(Set.class);
+        ArgumentCaptor<Flux<Recipe>> argumentCaptor = ArgumentCaptor.forClass(Flux.class);
 
         //when
         String viewName = controller.getIndexPage(model);
@@ -73,8 +76,9 @@ public class IndexControllerTest {
         assertEquals("index", viewName);
         verify(recipeService, times(1)).getRecipes();
         verify(model, times(1)).addAttribute(eq("recipes"), argumentCaptor.capture());
-        Set<Recipe> setInController = argumentCaptor.getValue();
-        assertEquals(2, setInController.size());
+        Flux<Recipe> setInController = argumentCaptor.getValue();
+        List<Recipe> recipeList = setInController.collectList().block();
+        assertEquals(2, recipeList.size());
     }
 
 }
